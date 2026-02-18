@@ -57,30 +57,33 @@ services:
         # ========================================
         # SYNC WORKSPACE FILES FROM GIT REPO
         # ========================================
-        REPO_URL="https://github.com/fabioguidotti/openclaw-portainer-stack.git"
-        REPO_TMP="/tmp/openclaw-repo"
+        # Uses npx degit (no git binary needed)
+        REPO="fabioguidotti/openclaw-portainer-stack"
         WS="/home/node/.openclaw/workspace"
 
         echo "Syncing workspace files from Git..."
-        rm -rf "$REPO_TMP"
-        git clone --depth 1 --single-branch "$REPO_URL" "$REPO_TMP" 2>/dev/null && {
-          # Sync task-agentes
-          if [ -d "$REPO_TMP/task-agentes" ]; then
-            mkdir -p "$WS/task-agentes"
-            cp -r "$REPO_TMP/task-agentes/"* "$WS/task-agentes/" 2>/dev/null
-            echo "  ✅ task-agentes synced"
-          fi
 
-          # Sync pbi-agents
-          if [ -d "$REPO_TMP/pbi-agents" ]; then
-            mkdir -p "$WS/pbi-agents"
-            cp -r "$REPO_TMP/pbi-agents/"* "$WS/pbi-agents/" 2>/dev/null
-            echo "  ✅ pbi-agents synced"
-          fi
+        # Sync task-agentes
+        if [ ! -f "$WS/task-agentes/AGENTS.md" ]; then
+          echo "  Downloading task-agentes..."
+          npx -y degit "$REPO/task-agentes" "$WS/task-agentes" --force 2>/dev/null \
+            && echo "  ✅ task-agentes synced" \
+            || echo "  ⚠️  task-agentes sync failed"
+        else
+          echo "  ℹ️  task-agentes already exists, skipping (delete to re-sync)"
+        fi
 
-          rm -rf "$REPO_TMP"
-          echo "Git sync complete."
-        } || echo "⚠️  Git clone failed — using existing workspace files"
+        # Sync pbi-agents
+        if [ ! -f "$WS/pbi-agents/supervisor/SOUL.md" ]; then
+          echo "  Downloading pbi-agents..."
+          npx -y degit "$REPO/pbi-agents" "$WS/pbi-agents" --force 2>/dev/null \
+            && echo "  ✅ pbi-agents synced" \
+            || echo "  ⚠️  pbi-agents sync failed"
+        else
+          echo "  ℹ️  pbi-agents already exists, skipping (delete to re-sync)"
+        fi
+
+        echo "Workspace sync complete."
 
         # ========================================
         # INSTALAR NOTION SKILL SE NÃO EXISTIR
