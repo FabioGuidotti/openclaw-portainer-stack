@@ -46,16 +46,42 @@ services:
     volumes:
       - /data/openclaw-1/.openclaw:/home/node/.openclaw
       - /data/openclaw-1/workspace:/home/node/.openclaw/workspace
-      # Mount the task-agentes skill/prompts into the workspace
-      - ./task-agentes:/home/node/.openclaw/workspace/task-agentes
-      # Mount pbi-agents workspaces
-      - ./pbi-agents:/home/node/.openclaw/workspace/pbi-agents
+      # NOTE: task-agentes e pbi-agents são sincronizados via git clone no entrypoint
+      # (bind mounts ./  não funcionam com Portainer Git-based stacks)
     ports:
       - "${TAILSCALE_IP}:18789:18789"
     entrypoint: ["/bin/sh", "-c"]
     
     command:
       - |
+        # ========================================
+        # SYNC WORKSPACE FILES FROM GIT REPO
+        # ========================================
+        REPO_URL="https://github.com/fabioguidotti/openclaw-portainer-stack.git"
+        REPO_TMP="/tmp/openclaw-repo"
+        WS="/home/node/.openclaw/workspace"
+
+        echo "Syncing workspace files from Git..."
+        rm -rf "$REPO_TMP"
+        git clone --depth 1 --single-branch "$REPO_URL" "$REPO_TMP" 2>/dev/null && {
+          # Sync task-agentes
+          if [ -d "$REPO_TMP/task-agentes" ]; then
+            mkdir -p "$WS/task-agentes"
+            cp -r "$REPO_TMP/task-agentes/"* "$WS/task-agentes/" 2>/dev/null
+            echo "  ✅ task-agentes synced"
+          fi
+
+          # Sync pbi-agents
+          if [ -d "$REPO_TMP/pbi-agents" ]; then
+            mkdir -p "$WS/pbi-agents"
+            cp -r "$REPO_TMP/pbi-agents/"* "$WS/pbi-agents/" 2>/dev/null
+            echo "  ✅ pbi-agents synced"
+          fi
+
+          rm -rf "$REPO_TMP"
+          echo "Git sync complete."
+        } || echo "⚠️  Git clone failed — using existing workspace files"
+
         # ========================================
         # INSTALAR NOTION SKILL SE NÃO EXISTIR
         # ========================================
