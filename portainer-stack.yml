@@ -1,0 +1,290 @@
+## =============================================================================
+## OpenClaw Stack para Portainer CE
+## =============================================================================
+## Portainer > Stacks > Add Stack > Web editor
+## Nome da stack: openclaw
+##
+## Environment variables no Portainer:
+##   OPENCLAW_IMAGE      = fabioguidotti/openclaw:latest
+##   TAILSCALE_IP        = 100.124.187.27
+##   TOKEN_1             = e3aeee950f82387f7e695a00c9b50bd568f26ab2997b027799f4ba531bd53b2d
+##   NOTION_API_KEY      = ntn_...
+##   NOTION_DATABASE_ID  = ...
+##   DISCORD_BOT_TOKEN   = ...
+##   MOONSHOT_API_KEY    = ...
+##
+## Config no host (para corrigir quando o gw reinicia em loop):
+##   /data/openclaw-1/.openclaw/openclaw.json
+##   channels.telegram.dmPolicy deve ser um de: pairing | allowlist | open | disabled (NAO use "allow").
+## Pairing (Telegram): entre no container openclaw-cli-1 e rode:
+##   node dist/index.js pairing list telegram
+##   node dist/index.js pairing approve telegram <CODIGO>
+##
+## Pareamento CLI <-> GW: o patch define gateway.mode=remote e gateway.remote.url
+## (ws://openclaw-gw-1:porta) + token, para o CLI no container conectar ao GW.
+## =============================================================================
+
+services:
+  # =============================================
+  # OPENCLAW GATEWAY + AGENT (porta 18789)
+  # =============================================
+  openclaw-gw-1:
+    image: ${OPENCLAW_IMAGE}
+    container_name: openclaw-gw-1
+    environment:
+      HOME: /home/node
+      NODE_ENV: production
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${TOKEN_1}
+      # Discord Channel
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      # Moonshot / Kimi 2.5
+      MOONSHOT_API_KEY: ${MOONSHOT_API_KEY}
+      # Notion Skill Configuration
+      NOTION_API_KEY: ${NOTION_API_KEY}
+      NOTION_DATABASE_ID: ${NOTION_DATABASE_ID}
+    volumes:
+      - /data/openclaw-1/.openclaw:/home/node/.openclaw
+      - /data/openclaw-1/workspace:/home/node/.openclaw/workspace
+      # Mount the task-agentes skill/prompts into the workspace
+      - ./task-agentes:/home/node/.openclaw/workspace/task-agentes
+      # Mount pbi-agents workspaces
+      - ./pbi-agents:/home/node/.openclaw/workspace/pbi-agents
+    ports:
+      - "${TAILSCALE_IP}:18789:18789"
+    entrypoint: ["/bin/sh", "-c"]
+    
+    command:
+      - |
+        # ========================================
+        # INSTALAR NOTION SKILL SE NÃO EXISTIR
+        # ========================================
+        SKILL_DIR="/home/node/.openclaw/skills/notion"
+        if [ ! -d "$SKILL_DIR" ]; then
+          echo "Instalando Notion skill..."
+          mkdir -p "$SKILL_DIR"
+          
+          # Tentar instalar via npx clawhub (método oficial)
+          npx -y clawhub@latest install notion 2>/dev/null || {
+            echo "ClawHub não disponível, criando skill manualmente..."
+            
+            # Criar SKILL.md básico para Notion
+            cat > "$SKILL_DIR/SKILL.md" << 'SKILLEOF'
+        # Notion Skill
+        
+        Use this skill to interact with Notion databases and pages.
+        
+        ## Environment Variables
+        - NOTION_API_KEY: Your Notion integration token
+        - NOTION_DATABASE_ID: The ID of your Notion database
+        
+        ## Available Functions
+        - Create pages in Notion databases
+        - Query database entries
+        - Update page properties
+        - Archive/delete pages
+        
+        ## Usage
+        When the user asks to create tasks, add items to Notion, or manage their Notion workspace, use this skill.
+        SKILLEOF
+            
+            # Criar package.json se necessário
+            if [ ! -f "$SKILL_DIR/package.json" ]; then
+              cat > "$SKILL_DIR/package.json" << 'PKGEOF'
+        {
+          "name": "notion-skill",
+          "version": "1.0.0",
+          "description": "Notion integration for OpenClaw",
+          "dependencies": {
+            "@notionhq/client": "^2.2.14"
+          }
+        }
+        PKGEOF
+              
+              # Instalar dependências
+              cd "$SKILL_DIR" && npm install --production 2>/dev/null || true
+            fi
+            
+            echo "Notion skill criada manualmente em $SKILL_DIR"
+          }
+        else
+          echo "Notion skill já existe em $SKILL_DIR"
+        fi
+        
+        # ========================================
+        # CONFIGURAR openclaw.json
+        # ========================================
+        node -e '
+        const fs = require("fs");
+        const p = "/home/node/.openclaw/openclaw.json";
+        let c = {};
+        
+        try {
+          c = JSON.parse(fs.readFileSync(p, "utf8"));
+        } catch (e) {
+          c = {};
+        }
+
+        // 1. Gateway - Configuração Base
+        if (!c.gateway) c.gateway = {};
+        c.gateway.auth = { 
+          mode: "token", 
+          token: process.env.OPENCLAW_GATEWAY_TOKEN 
+        };
+        c.gateway.controlUi = { dangerouslyDisableDeviceAuth: true };
+        c.gateway.bind = "lan";
+        c.gateway.mode = "local";
+
+        // 2. Agents - Modelo Principal
+        if (!c.agents) c.agents = {};
+        if (!c.agents.defaults) c.agents.defaults = {};
+        c.agents.defaults.model = { primary: "moonshot/kimi-k2.5" };
+
+        // 2b. Agents - Registro
+        const pbi = "/home/node/.openclaw/workspace/pbi-agents";
+        c.agents.list = [
+          {
+            id: "main",
+            name: "Main",
+            default: true,
+            workspace: "/home/node/.openclaw/workspace"
+          },
+          {
+            id: "manager",
+            name: "Mission Control",
+            workspace: "/home/node/.openclaw/workspace/task-agentes",
+            model: "moonshot/kimi-k2.5"
+          },
+          // --- PBI Agents ---
+          {
+            id: "pbi-supervisor",
+            name: "PBI Supervisor",
+            workspace: pbi + "/supervisor",
+            model: "moonshot/kimi-k2.5",
+            subagents: { allowAgents: ["*"] },
+            heartbeat: { every: "15m", target: "none" }
+          },
+          {
+            id: "pbi-data-profiler",
+            name: "PBI Data Profiler",
+            workspace: pbi + "/data-profiler",
+            model: "moonshot/kimi-k2.5",
+            heartbeat: { every: "30m", target: "none" }
+          },
+          {
+            id: "pbi-model-architect",
+            name: "PBI Model Architect",
+            workspace: pbi + "/model-architect",
+            model: "moonshot/kimi-k2.5",
+            heartbeat: { every: "30m", target: "none" }
+          },
+          {
+            id: "pbi-dax-specialist",
+            name: "PBI DAX Specialist",
+            workspace: pbi + "/dax-specialist",
+            model: "moonshot/kimi-k2.5",
+            heartbeat: { every: "30m", target: "none" }
+          },
+          {
+            id: "pbi-visual-designer",
+            name: "PBI Visual Designer",
+            workspace: pbi + "/visual-designer",
+            model: "moonshot/kimi-k2.5",
+            heartbeat: { every: "30m", target: "none" }
+          },
+          {
+            id: "pbi-builder",
+            name: "PBI Builder",
+            workspace: pbi + "/builder",
+            model: "moonshot/kimi-k2.5",
+            heartbeat: { every: "30m", target: "none" }
+          },
+          {
+            id: "pbi-knowledge-curator",
+            name: "PBI Knowledge Curator",
+            workspace: pbi + "/knowledge-curator",
+            model: "moonshot/kimi-k2.5",
+            heartbeat: { every: "60m", target: "none" }
+          },
+          {
+            id: "pbi-research-agent",
+            name: "PBI Research Agent",
+            workspace: pbi + "/research-agent",
+            model: "moonshot/kimi-k2.5",
+            heartbeat: { every: "30m", target: "none" }
+          }
+        ];
+
+        // 3. Channels - Discord
+        if (!c.channels) c.channels = {};
+        if (process.env.DISCORD_BOT_TOKEN) {
+          c.channels.discord = {
+            enabled: true,
+            token: process.env.DISCORD_BOT_TOKEN,
+            groupPolicy: "open"
+          };
+        }
+
+        // 4. Skills - Configuração
+        if (!c.skills) c.skills = {};
+        if (!c.skills.entries) c.skills.entries = {};
+        
+        // Ativar a skill do Notion
+        if (process.env.NOTION_API_KEY && process.env.NOTION_DATABASE_ID) {
+          c.skills.entries.notion = {
+            enabled: true,
+            env: {
+              NOTION_API_KEY: process.env.NOTION_API_KEY,
+              NOTION_DATABASE_ID: process.env.NOTION_DATABASE_ID
+            }
+          };
+        }
+        
+        // Configuração do node manager
+        if (!c.skills.install) c.skills.install = {};
+        c.skills.install.nodeManager = "npm";
+
+        // 5. Limpeza - Remove configurações inválidas
+        delete c.agents.configs;
+        
+        // Remove notion dos channels se existir
+        if (c.channels && c.channels.notion) {
+          delete c.channels.notion;
+        }
+
+        fs.writeFileSync(p, JSON.stringify(c, null, 2));
+        console.log("OpenClaw: Configuração aplicada com sucesso.");
+        '
+        
+        # ========================================
+        # INICIAR GATEWAY
+        # ========================================
+        exec node dist/index.js gateway --bind lan --port 18789
+
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  openclaw-cli-1:
+    image: ${OPENCLAW_IMAGE}
+    container_name: openclaw-cli-1
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${TOKEN_1}
+      BROWSER: echo
+      # Notion API disponível para skills
+      NOTION_API_KEY: ${NOTION_API_KEY}
+      NOTION_DATABASE_ID: ${NOTION_DATABASE_ID}
+    volumes:
+      - /data/openclaw-1/.openclaw:/home/node/.openclaw
+      - /data/openclaw-1/workspace:/home/node/.openclaw/workspace
+    stdin_open: true
+    tty: true
+    init: true
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["while true; do sleep 3600; done"]
+    restart: "no"
