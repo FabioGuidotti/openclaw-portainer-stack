@@ -46,45 +46,13 @@ services:
     volumes:
       - /data/openclaw-1/.openclaw:/home/node/.openclaw
       - /data/openclaw-1/workspace:/home/node/.openclaw/workspace
-      # NOTE: task-agentes e pbi-agents são sincronizados via git clone no entrypoint
-      # (bind mounts ./  não funcionam com Portainer Git-based stacks)
+      # Agents deployed via Auto-Sync script (see command below)
     ports:
       - "${TAILSCALE_IP}:18789:18789"
     entrypoint: ["/bin/sh", "-c"]
     
     command:
       - |
-        # ========================================
-        # SYNC WORKSPACE FILES FROM GIT REPO
-        # ========================================
-        # Uses npx degit (no git binary needed)
-        REPO="fabioguidotti/openclaw-portainer-stack"
-        WS="/home/node/.openclaw/workspace"
-
-        echo "Syncing workspace files from Git..."
-
-        # Sync task-agentes
-        if [ ! -f "$WS/task-agentes/AGENTS.md" ]; then
-          echo "  Downloading task-agentes..."
-          npx -y degit "$REPO/task-agentes" "$WS/task-agentes" --force 2>/dev/null \
-            && echo "  ✅ task-agentes synced" \
-            || echo "  ⚠️  task-agentes sync failed"
-        else
-          echo "  ℹ️  task-agentes already exists, skipping (delete to re-sync)"
-        fi
-
-        # Sync pbi-agents
-        if [ ! -f "$WS/pbi-agents/supervisor/SOUL.md" ]; then
-          echo "  Downloading pbi-agents..."
-          npx -y degit "$REPO/pbi-agents" "$WS/pbi-agents" --force 2>/dev/null \
-            && echo "  ✅ pbi-agents synced" \
-            || echo "  ⚠️  pbi-agents sync failed"
-        else
-          echo "  ℹ️  pbi-agents already exists, skipping (delete to re-sync)"
-        fi
-
-        echo "Workspace sync complete."
-
         # ========================================
         # INSTALAR NOTION SKILL SE NÃO EXISTIR
         # ========================================
@@ -285,6 +253,29 @@ services:
         console.log("OpenClaw: Configuração aplicada com sucesso.");
         '
         
+        # ========================================
+        # AUTO-SYNC AGENTS FROM GITHUB
+        # ========================================
+        echo "Syncing agents from GitHub..."
+        mkdir -p /home/node/.openclaw/workspace/pbi-agents
+        mkdir -p /home/node/.openclaw/workspace/task-agentes
+        mkdir -p /tmp/repo
+        
+        # Download and extract
+        curl -L -s https://github.com/FabioGuidotti/openclaw-portainer-stack/archive/refs/heads/main.tar.gz -o /tmp/repo/main.tar.gz
+        if [ -f /tmp/repo/main.tar.gz ]; then
+          tar -xzf /tmp/repo/main.tar.gz -C /tmp/repo
+          
+          # Copy files
+          cp -r /tmp/repo/openclaw-portainer-stack-main/pbi-agents/* /home/node/.openclaw/workspace/pbi-agents/
+          cp -r /tmp/repo/openclaw-portainer-stack-main/task-agentes/* /home/node/.openclaw/workspace/task-agentes/
+          
+          echo "Agents verified and synced."
+          rm -rf /tmp/repo
+        else
+          echo "WARNING: Failed to download agents from GitHub."
+        fi
+
         # ========================================
         # INICIAR GATEWAY
         # ========================================
