@@ -1,0 +1,93 @@
+table Vendas
+	lineageTag: 1ea8d404-24c4-4fa4-af7b-abc34a7cb6d5
+
+	column IDProduto
+		dataType: string
+		lineageTag: 64272138-7b1a-4f1b-a9c6-e9badbed720f
+		summarizeBy: none
+		sourceColumn: IDProduto
+
+		annotation SummarizationSetBy = Automatic
+
+	column IDCliente
+		dataType: string
+		lineageTag: 8efca9db-940b-4316-b546-684f449cc253
+		summarizeBy: none
+		sourceColumn: IDCliente
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantidade
+		dataType: int64
+		formatString: 0
+		lineageTag: 8a37c8de-1d8c-4fc1-b1ef-20d79a1d3021
+		summarizeBy: sum
+		sourceColumn: Quantidade
+
+		annotation SummarizationSetBy = Automatic
+
+	column Estado
+		dataType: string
+		lineageTag: e4c896a9-a54a-4a59-a95a-52b434174844
+		summarizeBy: none
+		sourceColumn: Estado
+
+		annotation SummarizationSetBy = Automatic
+
+	column Data
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: b8c97f79-85ca-4dfa-ae36-1b0fad379ed0
+		summarizeBy: none
+		sourceColumn: Data
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Valor
+		dataType: double
+		lineageTag: c5af3a34-835d-425b-a034-9d66fe5b86f8
+		summarizeBy: none
+		sourceColumn: Valor
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Índice
+		dataType: int64
+		formatString: 0
+		lineageTag: d7c25989-e1ef-4ec5-b2cd-d586d58c178f
+		summarizeBy: sum
+		sourceColumn: Índice
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Vendas-b225be62-4a5f-482a-b6d6-0c4adf98e5ef = m
+		mode: import
+		source =
+				let
+				    Fonte = Excel.Workbook(File.Contents("C:\Users\lucas\OneDrive - dashx.com.br\Desenvolvimento de portifólio\01.DB\Base de dados (1).xlsx"), null, true),
+				    Vendas_Sheet = Fonte{[Item="Vendas",Kind="Sheet"]}[Data],
+				    #"Cabeçalhos Promovidos" = Table.PromoteHeaders(Vendas_Sheet, [PromoteAllScalars=true]),
+				    #"Tipo Alterado" = Table.TransformColumnTypes(#"Cabeçalhos Promovidos",{{"IDProduto", type text}, {"IDCliente", type text}, {"Quantidade", Int64.Type}, {"Estado", type text}, {"Data", type date}, {"Valor", type number}}),
+				    #"Tipo Alterado1" = Table.TransformColumnTypes(#"Tipo Alterado",{{"Data", type text}}),
+				    #"Valor Substituído" = Table.ReplaceValue(#"Tipo Alterado1","2022","2015",Replacer.ReplaceText,{"Data"}),
+				    #"Valor Substituído1" = Table.ReplaceValue(#"Valor Substituído","2019","2016",Replacer.ReplaceText,{"Data"}),
+				    #"Valor Substituído2" = Table.ReplaceValue(#"Valor Substituído1","2021","2017",Replacer.ReplaceText,{"Data"}),
+				    #"Valor Substituído3" = Table.ReplaceValue(#"Valor Substituído2","2020","2018",Replacer.ReplaceText,{"Data"}),
+				    #"Valor Substituído4" = Table.ReplaceValue(#"Valor Substituído3","2015","2019",Replacer.ReplaceText,{"Data"}),
+				    #"Valor Substituído5" = Table.ReplaceValue(#"Valor Substituído4","2016","2020",Replacer.ReplaceText,{"Data"}),
+				    #"Valor Substituído6" = Table.ReplaceValue(#"Valor Substituído5","2017","2021",Replacer.ReplaceText,{"Data"}),
+				    #"Valor Substituído7" = Table.ReplaceValue(#"Valor Substituído6","2018","2022",Replacer.ReplaceText,{"Data"}),
+				    #"Tipo Alterado2" = Table.TransformColumnTypes(#"Valor Substituído7",{{"Data", type date}}),
+				    #"Índice Adicionado" = Table.AddIndexColumn(#"Tipo Alterado2", "Índice", 1, 1, Int64.Type),
+				    #"Colunas Reordenadas" = Table.ReorderColumns(#"Índice Adicionado",{"Índice", "IDProduto", "IDCliente", "Quantidade", "Estado", "Data", "Valor"})
+				in
+				    #"Colunas Reordenadas"
+
+	annotation PBI_NavigationStepName = Navegação
+
+	annotation PBI_ResultType = Table
+

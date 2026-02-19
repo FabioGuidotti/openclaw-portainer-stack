@@ -1,0 +1,35 @@
+table Clientes
+	lineageTag: 8d0eb026-de97-42f9-9a0d-e9af9b031469
+
+	column IDCliente
+		dataType: string
+		lineageTag: 6037884a-0c87-427b-934a-d2d75c47fec4
+		summarizeBy: none
+		sourceColumn: IDCliente
+
+		annotation SummarizationSetBy = Automatic
+
+	column Setor
+		dataType: string
+		lineageTag: d6dda091-44dc-41c2-9877-9640c2718bde
+		summarizeBy: none
+		sourceColumn: Setor
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Clientes-5caa357c-20e3-4c76-b8d0-dd04dc76e805 = m
+		mode: import
+		source =
+				let
+				    Fonte = Excel.Workbook(File.Contents("C:\Users\lucas\OneDrive - dashx.com.br\Desenvolvimento de portifólio\01.DB\Base de dados (1).xlsx"), null, true),
+				    Clientes_Sheet = Fonte{[Item="Clientes",Kind="Sheet"]}[Data],
+				    #"Tipo Alterado" = Table.TransformColumnTypes(Clientes_Sheet,{{"Column1", type text}, {"Column2", type text}}),
+				    #"Cabeçalhos Promovidos" = Table.PromoteHeaders(#"Tipo Alterado", [PromoteAllScalars=true]),
+				    #"Tipo Alterado1" = Table.TransformColumnTypes(#"Cabeçalhos Promovidos",{{"IDCliente", type text}, {"Setor", type text}})
+				in
+				    #"Tipo Alterado1"
+
+	annotation PBI_NavigationStepName = Navegação
+
+	annotation PBI_ResultType = Table
+

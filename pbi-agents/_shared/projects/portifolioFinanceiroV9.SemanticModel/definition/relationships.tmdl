@@ -1,0 +1,26 @@
+relationship 02c3e287-7c64-425c-92b4-a8763cc2a399
+	fromColumn: Vendas.IDCliente
+	toColumn: Clientes.IDCliente
+
+relationship 48c5ceb9-00f2-4d32-8a04-35544f05d5cb
+	fromColumn: Vendas.Valor
+	toColumn: Produtos.Valor
+
+relationship 4fdef958-bcd0-4bd6-bd2e-2c3450247706
+	joinOnDateBehavior: datePartOnly
+	fromColumn: dCalendario_new.Date
+	toColumn: LocalDateTable_7e0730be-cbe6-4360-98cb-722f584e0ff3.Date
+
+relationship 950e62fb-ef0a-4599-b844-3f736ac0c25c
+	joinOnDateBehavior: datePartOnly
+	fromColumn: dCalendario_new.'Início da semana'
+	toColumn: LocalDateTable_70fa4c4b-5f8b-4919-b0f1-9c89b95269dd.Date
+
+relationship 9c78540e-b0f3-49a3-884e-68a241630a1f
+	fromColumn: Vendas.Data
+	toColumn: dCalendario_new.Date
+
+relationship df239272-436b-4ced-85fe-4938696ed745
+	fromColumn: Despesas.Data
+	toColumn: dCalendario_new.Date
+

@@ -1,0 +1,74 @@
+table Produtos
+	lineageTag: 006903c6-a88b-4bed-855a-6b7f44701d8c
+
+	column IDProduto
+		dataType: string
+		lineageTag: 0a93c377-1b66-4676-9ac3-ed569e10125f
+		summarizeBy: none
+		sourceColumn: IDProduto
+
+		annotation SummarizationSetBy = Automatic
+
+	column Valor
+		dataType: double
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: 1974375a-bac3-436c-90cf-e1d6602ce0f4
+		summarizeBy: none
+		sourceColumn: Valor
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	column 'Custo médio de fabricação'
+		dataType: double
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: b1df1029-f94b-4e8c-9551-b14cc58ebc99
+		summarizeBy: none
+		sourceColumn: Custo médio de fabricação
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	column Lucro = Produtos[Valor]-Produtos[Custo médio de fabricação]
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: a58355a5-c795-4c3e-87cb-23a8ee1593b6
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	partition Produtos-aa7370b5-9c26-4807-8392-e72e0856b043 = m
+		mode: import
+		source =
+				let
+				    Fonte = Excel.Workbook(File.Contents("C:\Users\lucas\OneDrive - dashx.com.br\Desenvolvimento de portifólio\01.DB\Base de dados (1).xlsx"), null, true),
+				    Produtos_Sheet = Fonte{[Item="Produtos",Kind="Sheet"]}[Data],
+				    #"Cabeçalhos Promovidos" = Table.PromoteHeaders(Produtos_Sheet, [PromoteAllScalars=true]),
+				    #"Tipo Alterado" = Table.TransformColumnTypes(#"Cabeçalhos Promovidos",{{"Produto", type text}, {"Valor", type number}, {"Custo médio de fabricação", type number}, {"Column4", type any}}),
+				    #"Colunas Removidas" = Table.RemoveColumns(#"Tipo Alterado",{"Column4"}),
+				    #"Colunas Renomeadas" = Table.RenameColumns(#"Colunas Removidas",{{"Produto", "IDProduto"}}),
+				    #"Valor Substituído" = Table.ReplaceValue(#"Colunas Renomeadas",1087.1499999999999,928.5,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Tipo Alterado1" = Table.TransformColumnTypes(#"Valor Substituído",{{"Valor", type number}}),
+				    #"Valor Substituído1" = Table.ReplaceValue(#"Tipo Alterado1",214.92000000000002,190.92,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído2" = Table.ReplaceValue(#"Valor Substituído1",316.97700000000003,268.09,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído3" = Table.ReplaceValue(#"Valor Substituído2",928.5,128.5,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído4" = Table.ReplaceValue(#"Valor Substituído3",128.5,920,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído5" = Table.ReplaceValue(#"Valor Substituído4",193.2,230.7,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído6" = Table.ReplaceValue(#"Valor Substituído5",920,725.39,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído7" = Table.ReplaceValue(#"Valor Substituído6",725.39,845.39,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído8" = Table.ReplaceValue(#"Valor Substituído7",88.4,110.4,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído9" = Table.ReplaceValue(#"Valor Substituído8",268.09,320,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído10" = Table.ReplaceValue(#"Valor Substituído9",190.92,170.92,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído11" = Table.ReplaceValue(#"Valor Substituído10",320,290,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído12" = Table.ReplaceValue(#"Valor Substituído11",110.4,80,Replacer.ReplaceValue,{"Custo médio de fabricação"}),
+				    #"Valor Substituído13" = Table.ReplaceValue(#"Valor Substituído12",845.39,805.39,Replacer.ReplaceValue,{"Custo médio de fabricação"})
+				in
+				    #"Valor Substituído13"
+
+	annotation PBI_NavigationStepName = Navegação
+
+	annotation PBI_ResultType = Table
+

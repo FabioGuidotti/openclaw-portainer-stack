@@ -1,0 +1,49 @@
+table Despesas
+	lineageTag: ecb9d4ab-eec1-40f3-8692-5f7c0ed41e1d
+
+	column Data
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: dd009f7a-d979-476a-98fc-07e527820bfd
+		summarizeBy: none
+		sourceColumn: Data
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Origem '
+		dataType: string
+		lineageTag: b21a5f27-7240-4bdb-8679-740ca59727cc
+		summarizeBy: none
+		sourceColumn: "Origem "
+
+		annotation SummarizationSetBy = Automatic
+
+	column Valor
+		dataType: int64
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		lineageTag: 947682c4-2003-43e6-ac8a-e041542be418
+		summarizeBy: sum
+		sourceColumn: Valor
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	partition Despesas-8b38814d-c25b-4d00-8219-c9afe37b0ba2 = m
+		mode: import
+		source =
+				let
+				    Fonte = Excel.Workbook(File.Contents("C:\Users\lucas\OneDrive - dashx.com.br\Desenvolvimento de portifólio\01.DB\despesas.xlsx"), null, true),
+				    Página1_Sheet = Fonte{[Item="Página1",Kind="Sheet"]}[Data],
+				    #"Cabeçalhos Promovidos" = Table.PromoteHeaders(Página1_Sheet, [PromoteAllScalars=true]),
+				    #"Tipo Alterado" = Table.TransformColumnTypes(#"Cabeçalhos Promovidos",{{"Data", type date}, {"Origem ", type text}, {"Valor", Int64.Type}}),
+				    #"Valor Substituído" = Table.ReplaceValue(#"Tipo Alterado",#date(2019, 1, 1),#date(2019, 3, 1),Replacer.ReplaceValue,{"Data"})
+				in
+				    #"Valor Substituído"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navegação
+

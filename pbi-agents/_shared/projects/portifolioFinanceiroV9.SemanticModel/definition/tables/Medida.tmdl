@@ -1,0 +1,99 @@
+table Medida
+	lineageTag: 829ffac6-b39a-4891-8450-85a16e761dc7
+
+	measure QuantidadeDeProdutos = SUM(Vendas[Quantidade])
+		formatString: 0
+		lineageTag: 9231bf4f-ad8c-4683-b354-afa40b519fbc
+
+	measure 'Custo de Fabricação' = SUMX(Vendas, LOOKUPVALUE('Produtos'[Custo médio de fabricação], 'Produtos'[IDProduto], Vendas[IDProduto]) * Vendas[Quantidade])
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: 9d313809-1e01-4920-8f50-c7679fd9661f
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Lucro Líquido' = SUM(Vendas[Valor]) - [Custo de Fabricação] - [Despesas internas]
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: 0c5f16aa-9910-40cb-9e74-9b4087ad1228
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure Receita = ```
+			SUM(Vendas[Valor]) 
+			```
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: 378ab54d-6256-4ee1-8821-04e73cf7c3a3
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Margem de Lucro' = [Lucro em produtos]/[Receita]
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: c74dd755-d89a-4b59-ab5f-230788c9462a
+
+	measure 'Despesas internas' = SUM(Despesas[Valor])
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		lineageTag: 3dbd8181-06e7-45d5-8da0-46033f8b5e00
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Lucro em produtos' = SUM(Vendas[Valor]) - [Custo de Fabricação]
+		lineageTag: 389ef967-0cf3-4252-bdd7-0e1bbb411dc8
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Gastos = [Despesas internas] + [Custo de Fabricação]
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: 1d37c34a-e7df-4ea6-adfc-7fea4f72ad74
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Gastos negativo' = - [Gastos]
+		lineageTag: 5c023f37-e01e-4c2c-acba-9d45cdb8cb39
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Fabricação produto A' = CALCULATE([Custo de Fabricação],'Vendas'[IDProduto] = "A")
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: 209341e2-7e77-458b-9bf4-feedf4620b8e
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Fabricação produto B' = CALCULATE([Custo de Fabricação],'Vendas'[IDProduto] = "B")
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: 8d2bb0d5-6cc0-49b9-8dbe-6d92b78ab717
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Fabricação produto C' = CALCULATE([Custo de Fabricação],'Vendas'[IDProduto] = "C")
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: 06b4b131-d84a-4bec-ad9c-97b7f635b55a
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Fabricação produto D' = CALCULATE([Custo de Fabricação],'Vendas'[IDProduto] = "D")
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: f6c43c17-6823-43af-9cee-5161e81b1fe9
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	measure 'Fabricação produto E' = CALCULATE([Custo de Fabricação],'Vendas'[IDProduto] = "E")
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		lineageTag: 53c302f8-1cbe-4bc9-b06d-a7922e2d8d72
+
+		annotation PBI_FormatHint = {"currencyCulture":"pt-BR"}
+
+	partition Medida-6b3797e9-52fc-4d26-a143-42cb7e37fc5b = m
+		mode: import
+		source =
+				let
+				    Fonte = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"Coluna 1" = _t]),
+				    #"Tipo Alterado" = Table.TransformColumnTypes(Fonte,{{"Coluna 1", type text}}),
+				    #"Colunas Removidas" = Table.RemoveColumns(#"Tipo Alterado",{"Coluna 1"})
+				in
+				    #"Colunas Removidas"
+
+	changedProperty = Name
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navegação
+

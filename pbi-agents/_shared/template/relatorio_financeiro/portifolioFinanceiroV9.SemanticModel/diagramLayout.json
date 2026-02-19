@@ -1,0 +1,112 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 0,
+            "y": 0
+          },
+          "nodeIndex": "Clientes",
+          "nodeLineageTag": "8d0eb026-de97-42f9-9a0d-e9af9b031469",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 1
+        },
+        {
+          "location": {
+            "x": 494.89999666213987,
+            "y": 0
+          },
+          "nodeIndex": "Produtos",
+          "nodeLineageTag": "006903c6-a88b-4bed-855a-6b7f44701d8c",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 3
+        },
+        {
+          "location": {
+            "x": 357.3,
+            "y": 275.7
+          },
+          "nodeIndex": "Vendas",
+          "nodeLineageTag": "1ea8d404-24c4-4fa4-af7b-abc34a7cb6d5",
+          "size": {
+            "height": 224,
+            "width": 234
+          },
+          "zIndex": 2
+        },
+        {
+          "location": {
+            "x": 845.9,
+            "y": 0
+          },
+          "nodeIndex": "Medida",
+          "size": {
+            "height": 104,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 744.49999389648428,
+            "y": 297
+          },
+          "nodeIndex": "dCalendario_new",
+          "nodeLineageTag": "155ad5bc-75bb-4201-8a8f-94e3878a174b",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1196.9,
+            "y": 0
+          },
+          "nodeIndex": "Labels",
+          "nodeLineageTag": "1329b19e-1010-493b-964c-2634f4e16f2e",
+          "size": {
+            "height": 104,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 429.7980589831925,
+            "y": 621.32484806638547
+          },
+          "nodeIndex": "Despesas",
+          "nodeLineageTag": "ecb9d4ab-eec1-40f3-8692-5f7c0ed41e1d",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "Todas as tabelas",
+      "zoomValue": 48.927706810064535,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "Todas as tabelas",
+  "defaultDiagram": "Todas as tabelas"
+}
