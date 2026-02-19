@@ -272,8 +272,17 @@ services:
           tar -xzf /tmp/repo/main.tar.gz -C /tmp/repo
           
           # Copy files
-          cp -r /tmp/repo/openclaw-portainer-stack-main/pbi-agents/* /home/node/.openclaw/workspace/pbi-agents/
-          cp -r /tmp/repo/openclaw-portainer-stack-main/task-agentes/* /home/node/.openclaw/workspace/task-agentes/
+          # 1. Safe copy (no overwrite) for everything
+          cp -rn /tmp/repo/openclaw-portainer-stack-main/pbi-agents/* /home/node/.openclaw/workspace/pbi-agents/ || true
+          cp -rn /tmp/repo/openclaw-portainer-stack-main/task-agentes/* /home/node/.openclaw/workspace/task-agentes/ || true
+          
+          # 2. Force update for _shared/template (User Exception)
+          if [ -d "/tmp/repo/openclaw-portainer-stack-main/pbi-agents/_shared/template" ]; then
+             echo "Force updating pbi-agents/_shared/template..."
+             # Ensure target dir exists just in case
+             mkdir -p /home/node/.openclaw/workspace/pbi-agents/_shared/template
+             cp -r /tmp/repo/openclaw-portainer-stack-main/pbi-agents/_shared/template/* /home/node/.openclaw/workspace/pbi-agents/_shared/template/
+          fi
           
           echo "Agents verified and synced."
           rm -rf /tmp/repo
