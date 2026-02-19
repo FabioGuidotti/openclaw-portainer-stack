@@ -222,6 +222,11 @@ services:
           };
         }
 
+        // 3b. Tools - Agent Messaging (Required for Supervisor)
+        if (!c.tools) c.tools = {};
+        if (!c.tools.agentToAgent) c.tools.agentToAgent = {};
+        c.tools.agentToAgent.enabled = true;
+
         // 4. Skills - Configuração
         if (!c.skills) c.skills = {};
         if (!c.skills.entries) c.skills.entries = {};
