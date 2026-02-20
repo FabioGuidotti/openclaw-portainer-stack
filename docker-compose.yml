@@ -279,10 +279,30 @@ services:
           # 2. Force update for _shared/template (User Exception)
           if [ -d "/tmp/repo/openclaw-portainer-stack-main/pbi-agents/_shared/template" ]; then
              echo "Force updating pbi-agents/_shared/template..."
-             # Ensure target dir exists just in case
              mkdir -p /home/node/.openclaw/workspace/pbi-agents/_shared/template
              cp -r /tmp/repo/openclaw-portainer-stack-main/pbi-agents/_shared/template/* /home/node/.openclaw/workspace/pbi-agents/_shared/template/
           fi
+          
+          # 3. Force update for _shared/knowledge (governance files)
+          if [ -d "/tmp/repo/openclaw-portainer-stack-main/pbi-agents/_shared/knowledge" ]; then
+             echo "Force updating pbi-agents/_shared/knowledge..."
+             mkdir -p /home/node/.openclaw/workspace/pbi-agents/_shared/knowledge
+             cp -r /tmp/repo/openclaw-portainer-stack-main/pbi-agents/_shared/knowledge/* /home/node/.openclaw/workspace/pbi-agents/_shared/knowledge/
+          fi
+          
+          # 4. Force update SOUL.md, AGENTS.md, HEARTBEAT.md in every agent dir
+          REPO_PBI="/tmp/repo/openclaw-portainer-stack-main/pbi-agents"
+          DEST_PBI="/home/node/.openclaw/workspace/pbi-agents"
+          for agent_dir in supervisor builder data-profiler model-architect dax-specialist visual-designer knowledge-curator research-agent; do
+            if [ -d "$REPO_PBI/$agent_dir" ]; then
+              for f in SOUL.md AGENTS.md HEARTBEAT.md; do
+                if [ -f "$REPO_PBI/$agent_dir/$f" ]; then
+                  cp -f "$REPO_PBI/$agent_dir/$f" "$DEST_PBI/$agent_dir/$f"
+                fi
+              done
+            fi
+          done
+          echo "Force updated agent governance files (SOUL.md, AGENTS.md, HEARTBEAT.md, knowledge)."
           
           echo "Agents verified and synced."
           rm -rf /tmp/repo

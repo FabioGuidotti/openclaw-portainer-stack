@@ -1,5 +1,7 @@
 # PBIX Structure
 
+> See also: [`pbip_mandatory_structure.md`](pbip_mandatory_structure.md) for the complete mandatory PBIP file/folder structure when generating projects.
+
 ## Components
 
 | Component | Location | Purpose |
