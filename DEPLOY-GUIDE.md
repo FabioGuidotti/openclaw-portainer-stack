@@ -8,26 +8,15 @@ Guia passo a passo para deploy de 2 instancias OpenClaw isoladas.
 |---|---|---|
 | `vps-setup.sh` | Script de setup do host (Tailscale, firewall, diretorios, tokens) | Executar via SSH na VPS |
 | `portainer-stack.yml` | Docker Compose para o Portainer | Colar no editor de Stack do Portainer |
-| `docker-push.ps1` | Script para push da imagem ao Docker Hub | Executar no seu PC (PowerShell) |
 
 ---
 
-## Passo 1: Push da imagem para Docker Hub (no seu PC)
+## Passo 1: Imagem Oficial do OpenClaw
 
-A imagem `openclaw:local` ja foi buildada. Agora faca o push:
+O OpenClaw distribui sua imagem oficial e estavel atraves do GitHub Container Registry.
+Voce nao precisa fazer build local. A imagem a ser utilizada é:
 
-```powershell
-cd c:\GIT\clawbot-fabio\openclaw
-.\docker-push.ps1 -User SEU_USUARIO_DOCKERHUB
-```
-
-Ou manualmente:
-
-```powershell
-docker tag openclaw:local SEU_USUARIO/openclaw:latest
-docker login
-docker push SEU_USUARIO/openclaw:latest
-```
+`ghcr.io/openclaw/openclaw:latest`
 
 ---
 
@@ -60,7 +49,7 @@ Ao final, anote os valores que aparecem:
 
 | Name | Value |
 |---|---|
-| OPENCLAW_IMAGE | SEU_USUARIO/openclaw:latest |
+| OPENCLAW_IMAGE | ghcr.io/openclaw/openclaw:latest |
 | TAILSCALE_IP | (IP do passo 2) |
 | TOKEN_1 | (token do passo 2) |
 | TOKEN_2 | (token do passo 2) |

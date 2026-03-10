@@ -5,13 +5,14 @@
 ## Nome da stack: openclaw
 ##
 ## Environment variables no Portainer:
-##   OPENCLAW_IMAGE      = fabioguidotti/openclaw:latest
+##   OPENCLAW_IMAGE      = ghcr.io/openclaw/openclaw:latest
 ##   TAILSCALE_IP        = 100.124.187.27
 ##   TOKEN_1             = e3aeee950f82387f7e695a00c9b50bd568f26ab2997b027799f4ba531bd53b2d
 ##   NOTION_API_KEY      = ntn_...
 ##   NOTION_DATABASE_ID  = ...
 ##   DISCORD_BOT_TOKEN   = ...
 ##   MOONSHOT_API_KEY    = ...
+##   OP_SERVICE_ACCOUNT_TOKEN = op_...
 ##
 ## Config no host (para corrigir quando o gw reinicia em loop):
 ##   /data/openclaw-1/.openclaw/openclaw.json
@@ -25,12 +26,10 @@
 ## =============================================================================
 
 services:
-  # =============================================
   # OPENCLAW GATEWAY + AGENT (porta 18789)
   # =============================================
   openclaw-gw-1:
     image: ${OPENCLAW_IMAGE}
-    container_name: openclaw-gw-1
     environment:
       HOME: /home/node
       NODE_ENV: production
@@ -43,14 +42,16 @@ services:
       # Notion Skill Configuration
       NOTION_API_KEY: ${NOTION_API_KEY}
       NOTION_DATABASE_ID: ${NOTION_DATABASE_ID}
+      # 1Password Skill Configuration
+      OP_SERVICE_ACCOUNT_TOKEN: ${OP_SERVICE_ACCOUNT_TOKEN}
     volumes:
       - /data/openclaw-1/.openclaw:/home/node/.openclaw
       - /data/openclaw-1/workspace:/home/node/.openclaw/workspace
       # Agents deployed via Auto-Sync script (see command below)
     ports:
       - "${TAILSCALE_IP}:18789:18789"
-    entrypoint: ["/bin/sh", "-c"]
-    
+    entrypoint: [ "/bin/sh", "-c" ]
+
     command:
       - |
         # ========================================
@@ -68,19 +69,19 @@ services:
             # Criar SKILL.md básico para Notion
             cat > "$SKILL_DIR/SKILL.md" << 'SKILLEOF'
         # Notion Skill
-        
+
         Use this skill to interact with Notion databases and pages.
-        
+
         ## Environment Variables
         - NOTION_API_KEY: Your Notion integration token
         - NOTION_DATABASE_ID: The ID of your Notion database
-        
+
         ## Available Functions
         - Create pages in Notion databases
         - Query database entries
         - Update page properties
         - Archive/delete pages
-        
+
         ## Usage
         When the user asks to create tasks, add items to Notion, or manage their Notion workspace, use this skill.
         SKILLEOF
@@ -107,7 +108,7 @@ services:
         else
           echo "Notion skill já existe em $SKILL_DIR"
         fi
-        
+
         # ========================================
         # CONFIGURAR openclaw.json
         # ========================================
@@ -115,7 +116,7 @@ services:
         const fs = require("fs");
         const p = "/home/node/.openclaw/openclaw.json";
         let c = {};
-        
+
         try {
           c = JSON.parse(fs.readFileSync(p, "utf8"));
         } catch (e) {
@@ -138,77 +139,12 @@ services:
         c.agents.defaults.model = { primary: "moonshot/kimi-k2.5" };
 
         // 2b. Agents - Registro
-        const pbi = "/home/node/.openclaw/workspace/pbi-agents";
         c.agents.list = [
           {
             id: "main",
             name: "Main",
             default: true,
             workspace: "/home/node/.openclaw/workspace"
-          },
-          {
-            id: "manager",
-            name: "Mission Control",
-            workspace: "/home/node/.openclaw/workspace/task-agentes",
-            model: "moonshot/kimi-k2.5"
-          },
-          // --- PBI Agents ---
-          {
-            id: "pbi-supervisor",
-            name: "PBI Supervisor",
-            workspace: pbi + "/supervisor",
-            model: "moonshot/kimi-k2.5",
-            subagents: { allowAgents: ["*"] },
-            heartbeat: { every: "15m", target: "none" }
-          },
-          {
-            id: "pbi-data-profiler",
-            name: "PBI Data Profiler",
-            workspace: pbi + "/data-profiler",
-            model: "moonshot/kimi-k2.5",
-            heartbeat: { every: "30m", target: "none" }
-          },
-          {
-            id: "pbi-model-architect",
-            name: "PBI Model Architect",
-            workspace: pbi + "/model-architect",
-            model: "moonshot/kimi-k2.5",
-            heartbeat: { every: "30m", target: "none" }
-          },
-          {
-            id: "pbi-dax-specialist",
-            name: "PBI DAX Specialist",
-            workspace: pbi + "/dax-specialist",
-            model: "moonshot/kimi-k2.5",
-            heartbeat: { every: "30m", target: "none" }
-          },
-          {
-            id: "pbi-visual-designer",
-            name: "PBI Visual Designer",
-            workspace: pbi + "/visual-designer",
-            model: "moonshot/kimi-k2.5",
-            heartbeat: { every: "30m", target: "none" }
-          },
-          {
-            id: "pbi-builder",
-            name: "PBI Builder",
-            workspace: pbi + "/builder",
-            model: "moonshot/kimi-k2.5",
-            heartbeat: { every: "30m", target: "none" }
-          },
-          {
-            id: "pbi-knowledge-curator",
-            name: "PBI Knowledge Curator",
-            workspace: pbi + "/knowledge-curator",
-            model: "moonshot/kimi-k2.5",
-            heartbeat: { every: "60m", target: "none" }
-          },
-          {
-            id: "pbi-research-agent",
-            name: "PBI Research Agent",
-            workspace: pbi + "/research-agent",
-            model: "moonshot/kimi-k2.5",
-            heartbeat: { every: "30m", target: "none" }
           }
         ];
 
@@ -230,7 +166,7 @@ services:
         // 4. Skills - Configuração
         if (!c.skills) c.skills = {};
         if (!c.skills.entries) c.skills.entries = {};
-        
+
         // Ativar a skill do Notion
         if (process.env.NOTION_API_KEY && process.env.NOTION_DATABASE_ID) {
           c.skills.entries.notion = {
@@ -241,14 +177,24 @@ services:
             }
           };
         }
-        
+
+        // Ativar a skill do 1Password
+        if (process.env.OP_SERVICE_ACCOUNT_TOKEN) {
+          c.skills.entries["1password"] = {
+            enabled: true,
+            env: {
+              OP_SERVICE_ACCOUNT_TOKEN: process.env.OP_SERVICE_ACCOUNT_TOKEN
+            }
+          };
+        }
+
         // Configuração do node manager
         if (!c.skills.install) c.skills.install = {};
         c.skills.install.nodeManager = "npm";
 
         // 5. Limpeza - Remove configurações inválidas
         delete c.agents.configs;
-        
+
         // Remove notion dos channels se existir
         if (c.channels && c.channels.notion) {
           delete c.channels.notion;
@@ -257,58 +203,7 @@ services:
         fs.writeFileSync(p, JSON.stringify(c, null, 2));
         console.log("OpenClaw: Configuração aplicada com sucesso.");
         '
-        
-        # ========================================
-        # AUTO-SYNC AGENTS FROM GITHUB
-        # ========================================
-        echo "Syncing agents from GitHub..."
-        mkdir -p /home/node/.openclaw/workspace/pbi-agents
-        mkdir -p /home/node/.openclaw/workspace/task-agentes
-        mkdir -p /tmp/repo
-        
-        # Download and extract
-        curl -L -s https://github.com/FabioGuidotti/openclaw-portainer-stack/archive/refs/heads/main.tar.gz -o /tmp/repo/main.tar.gz
-        if [ -f /tmp/repo/main.tar.gz ]; then
-          tar -xzf /tmp/repo/main.tar.gz -C /tmp/repo
-          
-          # Copy files
-          # 1. Safe copy (no overwrite) for everything
-          cp -rn /tmp/repo/openclaw-portainer-stack-main/pbi-agents/* /home/node/.openclaw/workspace/pbi-agents/ || true
-          cp -rn /tmp/repo/openclaw-portainer-stack-main/task-agentes/* /home/node/.openclaw/workspace/task-agentes/ || true
-          
-          # 2. Force update for _shared/template (User Exception)
-          if [ -d "/tmp/repo/openclaw-portainer-stack-main/pbi-agents/_shared/template" ]; then
-             echo "Force updating pbi-agents/_shared/template..."
-             mkdir -p /home/node/.openclaw/workspace/pbi-agents/_shared/template
-             cp -r /tmp/repo/openclaw-portainer-stack-main/pbi-agents/_shared/template/* /home/node/.openclaw/workspace/pbi-agents/_shared/template/
-          fi
-          
-          # 3. Force update for _shared/knowledge (governance files)
-          if [ -d "/tmp/repo/openclaw-portainer-stack-main/pbi-agents/_shared/knowledge" ]; then
-             echo "Force updating pbi-agents/_shared/knowledge..."
-             mkdir -p /home/node/.openclaw/workspace/pbi-agents/_shared/knowledge
-             cp -r /tmp/repo/openclaw-portainer-stack-main/pbi-agents/_shared/knowledge/* /home/node/.openclaw/workspace/pbi-agents/_shared/knowledge/
-          fi
-          
-          # 4. Force update SOUL.md, AGENTS.md, HEARTBEAT.md in every agent dir
-          REPO_PBI="/tmp/repo/openclaw-portainer-stack-main/pbi-agents"
-          DEST_PBI="/home/node/.openclaw/workspace/pbi-agents"
-          for agent_dir in supervisor builder data-profiler model-architect dax-specialist visual-designer knowledge-curator research-agent; do
-            if [ -d "$REPO_PBI/$agent_dir" ]; then
-              for f in SOUL.md AGENTS.md HEARTBEAT.md; do
-                if [ -f "$REPO_PBI/$agent_dir/$f" ]; then
-                  cp -f "$REPO_PBI/$agent_dir/$f" "$DEST_PBI/$agent_dir/$f"
-                fi
-              done
-            fi
-          done
-          echo "Force updated agent governance files (SOUL.md, AGENTS.md, HEARTBEAT.md, knowledge)."
-          
-          echo "Agents verified and synced."
-          rm -rf /tmp/repo
-        else
-          echo "WARNING: Failed to download agents from GitHub."
-        fi
+
 
         # ========================================
         # INICIAR GATEWAY
@@ -330,15 +225,16 @@ services:
       TERM: xterm-256color
       OPENCLAW_GATEWAY_TOKEN: ${TOKEN_1}
       BROWSER: echo
-      # Notion API disponível para skills
+      # APIs disponíveis para skills
       NOTION_API_KEY: ${NOTION_API_KEY}
       NOTION_DATABASE_ID: ${NOTION_DATABASE_ID}
+      OP_SERVICE_ACCOUNT_TOKEN: ${OP_SERVICE_ACCOUNT_TOKEN}
     volumes:
       - /data/openclaw-1/.openclaw:/home/node/.openclaw
       - /data/openclaw-1/workspace:/home/node/.openclaw/workspace
     stdin_open: true
     tty: true
     init: true
-    entrypoint: ["/bin/sh", "-c"]
-    command: ["while true; do sleep 3600; done"]
+    entrypoint: [ "/bin/sh", "-c" ]
+    command: [ "while true; do sleep 3600; done" ]
     restart: "no"
