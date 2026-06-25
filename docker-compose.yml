@@ -14,6 +14,7 @@
 ##   MOONSHOT_API_KEY    = ...
 ##   OP_SERVICE_ACCOUNT_TOKEN = op_...
 ##   MATON_API_KEY       = ...
+##   OPENROUTER_API_KEY  = ...
 ##
 ## Config no host (para corrigir quando o gw reinicia em loop):
 ##   /data/openclaw-1/.openclaw/openclaw.json
@@ -40,6 +41,8 @@ services:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       # Moonshot / Kimi 2.5
       MOONSHOT_API_KEY: ${MOONSHOT_API_KEY}
+      # OpenRouter
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       # Notion Skill Configuration
       NOTION_API_KEY: ${NOTION_API_KEY}
       NOTION_DATABASE_ID: ${NOTION_DATABASE_ID}
@@ -152,7 +155,10 @@ services:
         // 2. Agents - Modelo Principal
         if (!c.agents) c.agents = {};
         if (!c.agents.defaults) c.agents.defaults = {};
-        c.agents.defaults.model = { primary: "openai-codex/gpt-5.3-codex" };
+        c.agents.defaults.model = { 
+          primary: "openai-codex/gpt-5.5",
+          fallback: "openrouter/auto" // Você pode alterar para um modelo específico, ex: "openrouter/anthropic/claude-3.5-sonnet"
+        };
 
         // 2b. Agents - Registro
         c.agents.list = [
@@ -256,6 +262,7 @@ services:
       NOTION_DATABASE_ID: ${NOTION_DATABASE_ID}
       OP_SERVICE_ACCOUNT_TOKEN: ${OP_SERVICE_ACCOUNT_TOKEN}
       MATON_API_KEY: ${MATON_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
     volumes:
       - /data/openclaw-1/.openclaw:/home/node/.openclaw
       - /data/openclaw-1/workspace:/home/node/.openclaw/workspace
