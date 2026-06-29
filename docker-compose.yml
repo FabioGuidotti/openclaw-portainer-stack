@@ -64,16 +64,16 @@ services:
         # INSTALAR NOTION SKILL SE NÃO EXISTIR
         # ========================================
         SKILL_DIR="/home/node/.openclaw/skills/notion"
-        if [ ! -d "$SKILL_DIR" ]; then
+        if [ ! -d "$$SKILL_DIR" ]; then
           echo "Instalando Notion skill..."
-          mkdir -p "$SKILL_DIR"
+          mkdir -p "$$SKILL_DIR"
           
           # Tentar instalar via npx clawhub (método oficial)
           npx -y clawhub@latest install notion 2>/dev/null || {
             echo "ClawHub não disponível, criando skill manualmente..."
             
             # Criar SKILL.md básico para Notion
-            cat > "$SKILL_DIR/SKILL.md" << 'SKILLEOF'
+            cat > "$$SKILL_DIR/SKILL.md" << 'SKILLEOF'
         # Notion Skill
 
         Use this skill to interact with Notion databases and pages.
@@ -93,8 +93,8 @@ services:
         SKILLEOF
             
             # Criar package.json se necessário
-            if [ ! -f "$SKILL_DIR/package.json" ]; then
-              cat > "$SKILL_DIR/package.json" << 'PKGEOF'
+            if [ ! -f "$$SKILL_DIR/package.json" ]; then
+              cat > "$$SKILL_DIR/package.json" << 'PKGEOF'
         {
           "name": "notion-skill",
           "version": "1.0.0",
@@ -106,26 +106,26 @@ services:
         PKGEOF
               
               # Instalar dependências
-              cd "$SKILL_DIR" && npm install --production 2>/dev/null || true
+              cd "$$SKILL_DIR" && npm install --production 2>/dev/null || true
             fi
             
-            echo "Notion skill criada manualmente em $SKILL_DIR"
+            echo "Notion skill criada manualmente em $$SKILL_DIR"
           }
         else
-          echo "Notion skill já existe em $SKILL_DIR"
+          echo "Notion skill já existe em $$SKILL_DIR"
         fi
 
         # ========================================
         # INSTALAR GOOGLE ADS API SKILL SE NÃO EXISTIR
         # ========================================
         GADS_SKILL_DIR="/home/node/.openclaw/skills/google-ads-api"
-        if [ ! -d "$GADS_SKILL_DIR" ]; then
+        if [ ! -d "$$GADS_SKILL_DIR" ]; then
           echo "Instalando Google Ads API skill..."
           npx -y clawhub@latest install google-ads-api 2>/dev/null || {
             echo "Falha ao instalar google-ads-api via clawhub. Verifique a documentação."
           }
         else
-          echo "Google Ads API skill já existe em $GADS_SKILL_DIR"
+          echo "Google Ads API skill já existe em $$GADS_SKILL_DIR"
         fi
 
         # ========================================
@@ -157,7 +157,7 @@ services:
         if (!c.agents.defaults) c.agents.defaults = {};
         c.agents.defaults.model = { 
           primary: "openai-codex/gpt-5.5",
-          fallback: "openrouter/auto" // Você pode alterar para um modelo específico, ex: "openrouter/anthropic/claude-3.5-sonnet"
+          fallbacks: ["openrouter/auto"] // Você pode alterar para um modelo específico, ex: "openrouter/anthropic/claude-3.5-sonnet"
         };
 
         // 2b. Agents - Registro
