@@ -234,8 +234,13 @@ services:
 
         fs.writeFileSync(p, JSON.stringify(c, null, 2));
         console.log("OpenClaw: Configuração aplicada com sucesso.");
+        console.log("OpenClaw Models Config:", JSON.stringify(c.models));
         '
 
+        # ========================================
+        # REPARAR CONFIGURAÇÃO SE NECESSÁRIO
+        # ========================================
+        node dist/index.js doctor --fix || true
 
         # ========================================
         # INICIAR GATEWAY
