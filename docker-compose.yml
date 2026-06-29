@@ -235,6 +235,12 @@ services:
         if (!c.skills.install) c.skills.install = {};
         c.skills.install.nodeManager = "npm";
 
+        // 4b. Plugins - Ativar Workboard
+        if (!c.plugins) c.plugins = {};
+        if (!c.plugins.entries) c.plugins.entries = {};
+        if (!c.plugins.entries.workboard) c.plugins.entries.workboard = {};
+        c.plugins.entries.workboard.enabled = true;
+
         // 5. Limpeza - Remove configurações inválidas
         delete c.agents.configs;
 
