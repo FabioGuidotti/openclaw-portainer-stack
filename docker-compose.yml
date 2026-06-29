@@ -179,7 +179,7 @@ services:
           }
         ];
 
-        // 3. Channels - Discord
+        // 3. Channels - Discord & Telegram
         if (!c.channels) c.channels = {};
         if (process.env.DISCORD_BOT_TOKEN) {
           c.channels.discord = {
@@ -188,6 +188,8 @@ services:
             groupPolicy: "open"
           };
         }
+        if (!c.channels.telegram) c.channels.telegram = {};
+        c.channels.telegram.groupPolicy = "open";
 
         // 3b. Tools - Agent Messaging (Required for Supervisor)
         if (!c.tools) c.tools = {};
