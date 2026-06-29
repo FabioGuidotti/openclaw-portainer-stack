@@ -152,6 +152,15 @@ services:
         c.gateway.bind = "lan";
         c.gateway.mode = "local";
 
+        // 1b. Environment Variables for Providers
+        if (!c.env) c.env = {};
+        const envs = ["OPENROUTER_API_KEY", "MOONSHOT_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"];
+        for (const k of envs) {
+          if (process.env[k]) {
+            c.env[k] = process.env[k];
+          }
+        }
+
         // 2. Agents - Modelo Principal
         if (!c.agents) c.agents = {};
         if (!c.agents.defaults) c.agents.defaults = {};
