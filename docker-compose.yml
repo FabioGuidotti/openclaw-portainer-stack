@@ -165,8 +165,8 @@ services:
         if (!c.agents) c.agents = {};
         if (!c.agents.defaults) c.agents.defaults = {};
         c.agents.defaults.model = { 
-          primary: "openai-codex/gpt-5.5",
-          fallbacks: ["openrouter/auto"] // Você pode alterar para um modelo específico, ex: "openrouter/anthropic/claude-3.5-sonnet"
+          primary: "openrouter/deepseek/deepseek-v4-flash",
+          fallbacks: ["openai-codex/gpt-5.5"] // Você pode alterar para um modelo específico, ex: "openrouter/anthropic/claude-3.5-sonnet"
         };
 
         // 2b. Agents - Registro
