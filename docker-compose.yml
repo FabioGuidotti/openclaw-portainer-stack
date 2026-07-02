@@ -294,3 +294,5 @@ services:
     entrypoint: [ "/bin/sh", "-c" ]
     command: [ "while true; do sleep 3600; done" ]
     restart: "no"
+    healthcheck:
+      disable: true
