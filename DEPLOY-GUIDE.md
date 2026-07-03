@@ -189,39 +189,51 @@ Fale com o agente **GoogleAdsExpert** (Telegram/Discord/Control UI):
 
 ---
 
-## Passo 9: GitHub Skill (skill local, API REST)
+## Passo 9: GitHub Skill (ClawHub: @steipete/github)
 
 Skill que permite ao agente **main** interagir com o GitHub (repositorios,
-issues, PRs, commits, CI/Actions). Como o `clawhub` **nao funciona nesta stack**
-(o mesmo motivo pelo qual `google-ads-api` falha no boot), a skill e **escrita
-localmente no boot** (mesmo padrao do fallback do Notion) e instrui o agente a
-usar a **API REST do GitHub via `curl` + `GITHUB_TOKEN`** — sem depender do `gh`
-CLI nem de rede para ClawHub. Se o binario `gh` existir no PATH, tambem funciona
-(ele autentica sozinho via `GITHUB_TOKEN`/`GH_TOKEN`; **nao precisa de
-`gh auth login`**).
+issues, PRs, commits, CI/Actions). E instalada pelo **caminho oficial do
+ClawHub** no boot do gateway, usando o **comando nativo do OpenClaw**:
+
+```sh
+openclaw skills install @steipete/github --global --as github
+```
+
+- `--global` instala em `~/.openclaw/skills/` (onde as demais skills vivem e onde
+  a config `skills.entries.github` procura). Sem ele, iria para `./skills` do cwd.
+- `--as github` fixa o slug como `github` (casa com `skills.entries.github` e com
+  `skills: ["github"]` do agente `main`).
+- No container o binario e `node dist/index.js`, entao o compose roda
+  `node dist/index.js skills install @steipete/github --global --as github`.
+
+> **Nao use `npx clawhub install`.** Aquela CLI e separada (para publish/sync) e
+> por padrao instala em `./skills` do diretorio atual, nao em `~/.openclaw/skills`
+> — por isso o boot antigo falhava/instalava no lugar errado (mesmo sintoma do
+> `google-ads-api`). O caminho oficial de instalacao e o comando nativo acima.
 
 ### Metodo recomendado: auto-install pelo stack (sem SSH)
 
-O `docker-compose.yml` ja escreve a skill `github` no boot, habilita
-`skills.entries.github` e a disponibiliza para o agente `main`. Basta
+O `docker-compose.yml` ja roda o comando nativo no boot, habilita
+`skills.entries.github` e disponibiliza a skill para o agente `main`. Basta
 **atualizar e redeployar a stack no Portainer**:
 
 1. Portainer > **Stacks** > `openclaw` > **Editor**: garanta que o
    `docker-compose.yml` esta atualizado (com o bloco `INSTALAR GITHUB SKILL`).
-2. Em **Environment variables**, adicione (necessario para operacoes autenticadas):
+2. Em **Environment variables**, adicione (para operacoes autenticadas em runtime):
    | Name | Value | Quando usar |
    |---|---|---|
    | `GITHUB_TOKEN` | GitHub PAT (scope `repo`) | operacoes autenticadas (ler repo privado, criar PR/issue, comentar, ver CI) |
-3. **Update the stack** (o Portainer recria o gateway, que escreve a skill no boot).
+3. **Update the stack** (o Portainer recria o gateway, que instala a skill no boot).
 4. Nos **Logs** do container do gateway, procure por:
-   `Instalando GitHub skill (local, API REST)` (primeira vez) ou
+   `Instalando GitHub skill (ClawHub: @steipete/github)` (primeira vez) ou
    `GitHub skill já existe`.
 
-> **Sem `gh auth login`.** A autenticacao vem da env `GITHUB_TOKEN` (injetada em
-> `skills.entries.github` e tambem como `GH_TOKEN`). Nao rode `sudo apt install
-> gh` dentro do container: nao persiste entre deploys e o container e nao-root/
-> endurecido (`no-new-privileges`, `cap_drop: ALL`). Sem `GITHUB_TOKEN`, a skill
-> so faz leitura publica (rate limit menor).
+> **Pre-requisito:** o container precisa **alcancar `clawhub.ai`** no boot. Se a
+> instalacao falhar no log, valide a conectividade (`node dist/index.js skills
+> search github` dentro do container) e o slug (`@steipete/github`).
+> **Auth em runtime:** vem da env `GITHUB_TOKEN` (injetada em
+> `skills.entries.github`, tambem como `GH_TOKEN`) — **nao precisa de
+> `gh auth login`**. Sem `GITHUB_TOKEN`, so leitura publica (rate limit menor).
 
 ### Usar
 Fale com o agente **Main** (Telegram/Discord/Control UI):

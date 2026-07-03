@@ -54,8 +54,8 @@ services:
       GAE_REPO: ${GAE_REPO:-FabioGuidotti/openclaw-portainer-stack}
       GAE_REF: ${GAE_REF:-main}
       # GITHUB_TOKEN: usado (a) para baixar a skill google-ads-expert se o repo for
-      # PRIVADO e (b) pela skill github (API REST/gh) para operacoes autenticadas
-      # no GitHub. GitHub PAT com scope repo.
+      # PRIVADO e (b) em runtime pela skill github (ClawHub @steipete/github) para
+      # operacoes autenticadas no GitHub. GitHub PAT com scope repo.
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       # Grupos Telegram atendidos pelo GoogleAdsExpert. LISTA separada por virgula.
       # Ex.: "-1001234567890,-1009876543210". Vazio = sem roteamento (main responde tudo).
@@ -141,71 +141,17 @@ services:
         fi
 
         # ========================================
-        # INSTALAR GITHUB SKILL SE NÃO EXISTIR (skill local: API REST + GITHUB_TOKEN)
+        # INSTALAR GITHUB SKILL SE NÃO EXISTIR (ClawHub oficial: @steipete/github)
         # ========================================
-        # O clawhub nao esta disponivel nesta stack (ver google-ads-api acima), entao
-        # a skill github e escrita localmente (mesmo padrao do fallback do Notion).
-        # Ela instrui o agente a usar a API REST do GitHub via curl + GITHUB_TOKEN,
-        # sem depender do gh CLI. Se o binario gh existir no PATH, tambem funciona
-        # (ele autentica sozinho via GITHUB_TOKEN/GH_TOKEN; sem gh auth login).
+        # Caminho oficial: comando NATIVO do OpenClaw (nao o npx clawhub, que instala
+        # em ./skills e depende de baixar a CLI separada). --global instala em
+        # ~/.openclaw/skills, onde as demais skills vivem e onde a config abaixo procura.
+        # --as github fixa o slug (casa com skills.entries.github e skills:["github"]).
         GITHUB_SKILL_DIR="/home/node/.openclaw/skills/github"
         if [ ! -f "$$GITHUB_SKILL_DIR/SKILL.md" ]; then
-          echo "Instalando GitHub skill (local, API REST)..."
-          mkdir -p "$$GITHUB_SKILL_DIR"
-          cat > "$$GITHUB_SKILL_DIR/SKILL.md" << 'SKILLEOF'
-        # GitHub Skill
-
-        Use esta skill para interagir com o GitHub (repositorios, issues, pull
-        requests, commits e CI/Actions) usando a API REST oficial em
-        https://api.github.com.
-
-        ## Autenticacao
-        O token fica na variavel de ambiente GITHUB_TOKEN (um GitHub PAT, scope repo).
-        Envie-o no header Authorization. Se GITHUB_TOKEN estiver vazio, apenas
-        operacoes publicas de leitura funcionam (com rate limit menor) — avise o
-        usuario nesse caso. NUNCA exiba o valor do token em respostas ou logs.
-
-        ## Como chamar (via shell/curl)
-        Headers padrao em toda requisicao:
-          -H "Authorization: Bearer $$GITHUB_TOKEN"
-          -H "Accept: application/vnd.github+json"
-          -H "X-GitHub-Api-Version: 2022-11-28"
-
-        ### Exemplos
-        Listar issues abertas:
-          curl -sS -H "Authorization: Bearer $$GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/OWNER/REPO/issues?state=open"
-
-        Criar issue:
-          curl -sS -X POST -H "Authorization: Bearer $$GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/OWNER/REPO/issues" -d '{"title":"...","body":"..."}'
-
-        Comentar em issue/PR (numero N):
-          curl -sS -X POST -H "Authorization: Bearer $$GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/OWNER/REPO/issues/N/comments" -d '{"body":"..."}'
-
-        Pull requests:
-          Listar: GET  /repos/OWNER/REPO/pulls?state=open
-          Criar:  POST /repos/OWNER/REPO/pulls -d '{"title":"...","head":"BRANCH","base":"main","body":"..."}'
-
-        Ultimos commits:
-          GET /repos/OWNER/REPO/commits?per_page=10
-
-        Status de CI (GitHub Actions):
-          GET /repos/OWNER/REPO/actions/runs?per_page=10
-          GET /repos/OWNER/REPO/commits/SHA/check-runs
-
-        ## Boas praticas
-        - Confirme OWNER/REPO com o usuario quando nao estiver claro.
-        - Para acoes de escrita (criar/fechar issue, abrir PR, comentar, merge),
-          confirme com o usuario ANTES de executar.
-        - Em 401/403: verifique se GITHUB_TOKEN esta definido e com escopo repo.
-
-        ## gh CLI (opcional)
-        Se `gh` existir no PATH, pode usa-lo no lugar do curl; ele autentica
-        automaticamente via GITHUB_TOKEN/GH_TOKEN (nao rode `gh auth login`).
-        SKILLEOF
-          echo "GitHub skill instalada em $$GITHUB_SKILL_DIR"
+          echo "Instalando GitHub skill (ClawHub: @steipete/github)..."
+          node dist/index.js skills install @steipete/github --global --as github 2>&1 \
+            || echo "Falha ao instalar @steipete/github via ClawHub. Verifique a conectividade com clawhub.ai e o slug."
         else
           echo "GitHub skill já existe em $$GITHUB_SKILL_DIR"
         fi
@@ -418,7 +364,7 @@ services:
           };
         }
 
-        // Ativar a skill github (skill local: API REST do GitHub via curl).
+        // Ativar a skill github (ClawHub: @steipete/github).
         // Interage com repositorios/PRs/issues/commits/CI do GitHub.
         // Requer GITHUB_TOKEN (PAT) para operacoes autenticadas.
         if (fs.existsSync("/home/node/.openclaw/skills/github/SKILL.md")) {
