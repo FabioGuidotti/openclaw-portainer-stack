@@ -53,7 +53,9 @@ services:
       # GoogleAdsExpert skill auto-install (baixa a skill do repositorio no boot)
       GAE_REPO: ${GAE_REPO:-FabioGuidotti/openclaw-portainer-stack}
       GAE_REF: ${GAE_REF:-main}
-      # GITHUB_TOKEN so e necessario se o repo for PRIVADO (GitHub PAT com scope repo)
+      # GITHUB_TOKEN: usado (a) para baixar a skill google-ads-expert se o repo for
+      # PRIVADO e (b) pela skill github (ClawHub: steipete/github) para operacoes
+      # autenticadas na API/CLI do GitHub. GitHub PAT com scope repo.
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       # Grupos Telegram atendidos pelo GoogleAdsExpert. LISTA separada por virgula.
       # Ex.: "-1001234567890,-1009876543210". Vazio = sem roteamento (main responde tudo).
@@ -136,6 +138,19 @@ services:
           }
         else
           echo "Google Ads API skill já existe em $$GADS_SKILL_DIR"
+        fi
+
+        # ========================================
+        # INSTALAR GITHUB SKILL SE NÃO EXISTIR (ClawHub: steipete/github)
+        # ========================================
+        GITHUB_SKILL_DIR="/home/node/.openclaw/skills/github"
+        if [ ! -f "$$GITHUB_SKILL_DIR/SKILL.md" ]; then
+          echo "Instalando GitHub skill (ClawHub: steipete/github)..."
+          npx -y clawhub@latest install steipete/github 2>/dev/null \
+            || npx -y clawhub@latest install github 2>/dev/null \
+            || echo "Falha ao instalar github skill via clawhub. Verifique a conectividade com clawhub.ai."
+        else
+          echo "GitHub skill já existe em $$GITHUB_SKILL_DIR"
         fi
 
         # ========================================
@@ -250,7 +265,8 @@ services:
             id: "main",
             name: "Main",
             default: true,
-            workspace: "/home/node/.openclaw/workspace"
+            workspace: "/home/node/.openclaw/workspace",
+            skills: ["github"]
           },
           {
             id: "google-ads-expert",
@@ -341,6 +357,18 @@ services:
             enabled: true,
             env: process.env.MATON_API_KEY
               ? { MATON_API_KEY: process.env.MATON_API_KEY }
+              : {}
+          };
+        }
+
+        // Ativar a skill github (ClawHub: steipete/github).
+        // Interage com repositorios/PRs/issues do GitHub (via CLI gh / API).
+        // Requer GITHUB_TOKEN (PAT) para operacoes autenticadas.
+        if (fs.existsSync("/home/node/.openclaw/skills/github/SKILL.md")) {
+          c.skills.entries.github = {
+            enabled: true,
+            env: process.env.GITHUB_TOKEN
+              ? { GITHUB_TOKEN: process.env.GITHUB_TOKEN, GH_TOKEN: process.env.GITHUB_TOKEN }
               : {}
           };
         }
