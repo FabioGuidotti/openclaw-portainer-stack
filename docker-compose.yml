@@ -170,12 +170,26 @@ services:
         };
 
         // 2b. Agents - Registro
+        // GoogleAdsExpert: consultor/gestor permanente de Google Ads.
+        // A skill google-ads-expert e o system-prompt.md sao instalados via
+        // agents/google-ads-expert/deploy/deploy-google-ads-expert.sh
+        const gaePromptPath = "/home/node/.openclaw/skills/google-ads-expert/system-prompt.md";
+        let gaePrompt = "";
+        try { gaePrompt = fs.readFileSync(gaePromptPath, "utf8"); } catch (e) { gaePrompt = ""; }
         c.agents.list = [
           {
             id: "main",
             name: "Main",
             default: true,
             workspace: "/home/node/.openclaw/workspace"
+          },
+          {
+            id: "google-ads-expert",
+            name: "GoogleAdsExpert",
+            default: false,
+            workspace: "/home/node/.openclaw/workspace/google-ads-expert",
+            skills: ["google-ads-expert", "google-ads-api", "notion"],
+            prompt: gaePrompt || undefined
           }
         ];
 
@@ -228,6 +242,18 @@ services:
             env: {
               MATON_API_KEY: process.env.MATON_API_KEY
             }
+          };
+        }
+
+        // Ativar a skill google-ads-expert (consultor/gestor de Google Ads).
+        // Metodologia local (knowledge/playbooks/scoring/reports); usa o Maton
+        // (google-ads-api) para dados ao vivo. Funciona tambem com dados colados.
+        if (fs.existsSync("/home/node/.openclaw/skills/google-ads-expert/SKILL.md")) {
+          c.skills.entries["google-ads-expert"] = {
+            enabled: true,
+            env: process.env.MATON_API_KEY
+              ? { MATON_API_KEY: process.env.MATON_API_KEY }
+              : {}
           };
         }
 
