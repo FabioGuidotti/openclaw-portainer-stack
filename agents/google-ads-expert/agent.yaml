@@ -1,0 +1,39 @@
+# Descritor do agente OpenClaw — GoogleAdsExpert
+#
+# Este arquivo descreve como registrar o agente no OpenClaw. Os valores abaixo
+# são materializados em `openclaw.json` -> `agents.list[]` pelo script de config
+# do docker-compose (ver ../../docker-compose.yml) ou pelo deploy script
+# (deploy/deploy-google-ads-expert.sh). A identidade (system prompt) vem de
+# `system-prompt.md`; o conhecimento vem da skill `google-ads-expert` (SKILL.md).
+
+id: google-ads-expert
+name: GoogleAdsExpert
+default: false
+
+# Identidade / system prompt do agente (conteúdo de system-prompt.md é injetado).
+promptFile: system-prompt.md
+
+# Modelo: herda o default do stack se omitido. Recomendado um modelo forte de
+# raciocínio para diagnóstico e priorização.
+model:
+  primary: openai-codex/gpt-5.5
+  fallbacks:
+    - openrouter/deepseek/deepseek-v4-flash
+
+# Workspace dedicado (histórico de auditorias / memória fica aqui — ver references/memory.md).
+workspace: /home/node/.openclaw/workspace/google-ads-expert
+
+# Skills disponíveis para este agente (allowlist). Uma lista não-vazia é o
+# conjunto final para o agente — não faz merge com os defaults.
+skills:
+  - google-ads-expert   # esta skill (knowledge + playbooks + scoring + reports)
+  - google-ads-api      # Maton — camada de execução de dados ao vivo (GAQL)
+  - notion              # opcional: publicar relatórios/histórico no Notion
+
+description: >
+  Consultor e gestor permanente de Google Ads. Audita contas (Health Score
+  0-100 + plano priorizado), gerencia continuamente (pacing, detecção de
+  anomalias, rotina semanal), explica o raciocínio (10-Principle Thinking
+  Framework), aprende com auditorias anteriores (baseline/memória) e executa
+  mudanças via Maton somente após confirmação explícita.
+</content>

@@ -137,6 +137,46 @@ Requisito: Tailscale instalado e conectado no dispositivo do usuario.
 
 ---
 
+## Passo 8: GoogleAdsExpert (agente consultor de Google Ads)
+
+Agente OpenClaw que audita e gerencia contas de Google Ads continuamente,
+usando o **Maton** (skill `google-ads-api`) para dados ao vivo. Metodologia e
+documentacao completas em `agents/google-ads-expert/` e `docs/`.
+
+### Pre-requisitos
+- Variavel `MATON_API_KEY` ja definida no stack (ver topo do compose).
+- Repositorio clonado no host da VPS.
+
+### Instalar a skill + workspace do agente
+```bash
+# No host da VPS, a partir do repo clonado:
+sudo sh agents/google-ads-expert/deploy/deploy-google-ads-expert.sh \
+  --openclaw-dir /data/openclaw-1/.openclaw
+```
+Isso copia a skill para `/data/openclaw-1/.openclaw/skills/google-ads-expert`
+e prepara o workspace de memoria em `.../workspace/google-ads-expert`.
+
+### Registrar no OpenClaw
+O `docker-compose.yml` ja injeta a configuracao na inicializacao do gateway:
+registra o agente `google-ads-expert` em `agents.list` e habilita a skill
+`google-ads-expert` em `skills.entries`. Basta reiniciar o gateway:
+
+1. Portainer > Containers > `openclaw-gw-1` > **Restart**
+2. Logs esperados: config aplicada com sucesso; skill `google-ads-expert` carregada.
+
+### Usar
+Fale com o agente **GoogleAdsExpert** (Telegram/Discord/Control UI):
+- "Audita a conta 123-456-7890" (auditoria completa + Health Score)
+- "Onde invisto os proximos R$ 10.000?" / "Qual campanha pausar hoje?"
+- "Por que meu CPA subiu?" / "Gera o relatorio executivo"
+
+> **Autonomia:** o agente le dados e recomenda livremente; **toda mudanca
+> (pausar, ajustar bid/budget, negativas) exige confirmacao explicita** antes de
+> ser aplicada via Maton. Se o Maton nao expuser escrita, o agente entrega o
+> passo-a-passo para execucao manual.
+
+---
+
 ## Verificacao de Seguranca
 
 De uma maquina EXTERNA (sem Tailscale), execute:
