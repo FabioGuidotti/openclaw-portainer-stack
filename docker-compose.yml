@@ -55,8 +55,10 @@ services:
       GAE_REF: ${GAE_REF:-main}
       # GITHUB_TOKEN so e necessario se o repo for PRIVADO (GitHub PAT com scope repo)
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
-      # ID do grupo Telegram que deve ser atendido pelo GoogleAdsExpert (ex.: -1001234567890)
-      # Vazio = nenhum roteamento; o agente 'main' responde todos os grupos.
+      # Grupos Telegram atendidos pelo GoogleAdsExpert. LISTA separada por virgula.
+      # Ex.: "-1001234567890,-1009876543210". Vazio = sem roteamento (main responde tudo).
+      GAE_TELEGRAM_GROUP_IDS: ${GAE_TELEGRAM_GROUP_IDS:-}
+      # (compat) singular ainda funciona como fallback se o plural estiver vazio
       GAE_TELEGRAM_GROUP_ID: ${GAE_TELEGRAM_GROUP_ID:-}
     volumes:
       - /data/openclaw-1/.openclaw:/home/node/.openclaw
@@ -278,11 +280,17 @@ services:
         if (!Array.isArray(c.bindings)) c.bindings = [];
         // remove bindings antigos deste agente para evitar duplicidade
         c.bindings = c.bindings.filter(function (b) { return !(b && b.agentId === "google-ads-expert"); });
-        const gaeGroup = (process.env.GAE_TELEGRAM_GROUP_ID || "").trim();
-        if (gaeGroup) {
-          c.bindings.push({ agentId: "google-ads-expert", match: { channel: "telegram", peer: { kind: "group", id: gaeGroup } } });
-          c.bindings.push({ agentId: "google-ads-expert", match: { channel: "telegram", peer: { kind: "channel", id: gaeGroup } } });
-          console.log("google-ads-expert: roteamento do grupo Telegram " + gaeGroup + " -> GoogleAdsExpert");
+        // Aceita LISTA de grupos separados por virgula/espaco/ponto-e-virgula.
+        // GAE_TELEGRAM_GROUP_IDS (plural) tem prioridade; GAE_TELEGRAM_GROUP_ID (singular) e fallback.
+        const gaeRaw = (process.env.GAE_TELEGRAM_GROUP_IDS || process.env.GAE_TELEGRAM_GROUP_ID || "");
+        const gaeGroups = gaeRaw.split(/[\s,;]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+        const gaeUniq = gaeGroups.filter(function (v, i) { return gaeGroups.indexOf(v) === i; });
+        gaeUniq.forEach(function (gid) {
+          c.bindings.push({ agentId: "google-ads-expert", match: { channel: "telegram", peer: { kind: "group", id: gid } } });
+          c.bindings.push({ agentId: "google-ads-expert", match: { channel: "telegram", peer: { kind: "channel", id: gid } } });
+        });
+        if (gaeUniq.length) {
+          console.log("google-ads-expert: roteamento Telegram -> GoogleAdsExpert para " + gaeUniq.length + " grupo(s): " + gaeUniq.join(", "));
         }
 
         // 3b. Tools - Agent Messaging (Required for Supervisor)
