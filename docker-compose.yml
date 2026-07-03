@@ -55,6 +55,9 @@ services:
       GAE_REF: ${GAE_REF:-main}
       # GITHUB_TOKEN so e necessario se o repo for PRIVADO (GitHub PAT com scope repo)
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      # ID do grupo Telegram que deve ser atendido pelo GoogleAdsExpert (ex.: -1001234567890)
+      # Vazio = nenhum roteamento; o agente 'main' responde todos os grupos.
+      GAE_TELEGRAM_GROUP_ID: ${GAE_TELEGRAM_GROUP_ID:-}
     volumes:
       - /data/openclaw-1/.openclaw:/home/node/.openclaw
       - /data/openclaw-1/workspace:/home/node/.openclaw/workspace
@@ -267,6 +270,20 @@ services:
         }
         if (!c.channels.telegram) c.channels.telegram = {};
         c.channels.telegram.groupPolicy = "open";
+
+        // 3a. Routing - grupo especifico do Telegram -> GoogleAdsExpert
+        // Binding por peer (grupo) vence o agente default (main). Defina o ID do
+        // grupo em GAE_TELEGRAM_GROUP_ID (ex.: -1001234567890). Sem a env var,
+        // nenhum roteamento e adicionado e o main responde tudo.
+        if (!Array.isArray(c.bindings)) c.bindings = [];
+        // remove bindings antigos deste agente para evitar duplicidade
+        c.bindings = c.bindings.filter(function (b) { return !(b && b.agentId === "google-ads-expert"); });
+        const gaeGroup = (process.env.GAE_TELEGRAM_GROUP_ID || "").trim();
+        if (gaeGroup) {
+          c.bindings.push({ agentId: "google-ads-expert", match: { channel: "telegram", peer: { kind: "group", id: gaeGroup } } });
+          c.bindings.push({ agentId: "google-ads-expert", match: { channel: "telegram", peer: { kind: "channel", id: gaeGroup } } });
+          console.log("google-ads-expert: roteamento do grupo Telegram " + gaeGroup + " -> GoogleAdsExpert");
+        }
 
         // 3b. Tools - Agent Messaging (Required for Supervisor)
         if (!c.tools) c.tools = {};
