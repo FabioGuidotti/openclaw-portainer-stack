@@ -189,6 +189,44 @@ Fale com o agente **GoogleAdsExpert** (Telegram/Discord/Control UI):
 
 ---
 
+## Passo 9: GitHub Skill (ClawHub: steipete/github)
+
+Skill que permite ao agente **main** interagir com o GitHub (repositorios, PRs,
+issues) via API/CLI `gh`. E instalada do ClawHub no boot do gateway, no mesmo
+padrao de `notion`/`google-ads-api`.
+
+### Metodo recomendado: auto-install pelo stack (sem SSH)
+
+O `docker-compose.yml` ja contem o bloco de auto-install da skill `github`,
+habilita `skills.entries.github` e a disponibiliza para o agente `main`. Basta
+**atualizar e redeployar a stack no Portainer**:
+
+1. Portainer > **Stacks** > `openclaw` > **Editor**: garanta que o
+   `docker-compose.yml` esta atualizado (com o bloco `INSTALAR GITHUB SKILL`).
+2. Em **Environment variables**, adicione (necessario para operacoes autenticadas):
+   | Name | Value | Quando usar |
+   |---|---|---|
+   | `GITHUB_TOKEN` | GitHub PAT (scope `repo`) | operacoes autenticadas (ler repo privado, criar PR/issue, comentar) |
+3. **Update the stack** (o Portainer recria o gateway, que instala a skill no boot).
+4. Nos **Logs** do container do gateway, procure por:
+   `Instalando GitHub skill` (primeira vez) ou `GitHub skill já existe`.
+
+> **Slug do ClawHub.** O bloco tenta `clawhub install steipete/github` e, como
+> fallback, `clawhub install github`. Se ambos falharem no log, confirme o slug
+> exato na pagina da skill (`https://clawhub.ai/steipete/skills/github`) e ajuste
+> o comando no `docker-compose.yml`.
+
+### Usar
+Fale com o agente **Main** (Telegram/Discord/Control UI):
+- "Liste as issues abertas do repo X"
+- "Abra um PR da branch Y" / "Comente na PR #123"
+- "Resuma os ultimos commits do repo Z"
+
+> Sem `GITHUB_TOKEN`, a skill fica limitada a operacoes publicas/nao autenticadas
+> (e sujeita a rate limit menor).
+
+---
+
 ## Verificacao de Seguranca
 
 De uma maquina EXTERNA (sem Tailscale), execute:
