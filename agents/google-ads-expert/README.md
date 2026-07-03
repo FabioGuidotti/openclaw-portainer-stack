@@ -50,19 +50,20 @@ google-ads-expert/
 
 ## Deploy
 
-O stack monta `/data/openclaw-1/.openclaw` em `/home/node/.openclaw`. O deploy
-copia esta skill para `…/.openclaw/skills/google-ads-expert` e registra o agente.
+**Método recomendado — auto-install pelo stack (sem SSH):** o `docker-compose.yml`
+baixa esta skill do repositório no boot do gateway (via `GAE_REPO`/`GAE_REF`, com
+`GITHUB_TOKEN` opcional para repo privado) e registra o agente em `agents.list` +
+habilita a skill em `skills.entries`. Basta **mergear o PR na `main`** e **atualizar/
+redeployar a stack no Portainer**. Nos logs do gateway: `google-ads-expert: skill instalada`.
 
+**Alternativa — deploy manual via SSH no host:**
 ```bash
-# No host da VPS, a partir do repo clonado:
-sudo bash agents/google-ads-expert/deploy/deploy-google-ads-expert.sh \
+sudo sh agents/google-ads-expert/deploy/deploy-google-ads-expert.sh \
   --openclaw-dir /data/openclaw-1/.openclaw
-# depois, no Portainer: Restart do container openclaw-gw-1
 ```
 
-O `docker-compose.yml` já injeta a configuração (registro do agente em
-`agents.list` + habilitação da skill) na inicialização do gateway. Ver a seção
-**GoogleAdsExpert** no `DEPLOY-GUIDE.md`.
+Passo a passo completo (incluindo variáveis e como achar o nome real do container)
+na seção **GoogleAdsExpert** do `DEPLOY-GUIDE.md`.
 
 > **Nota de versão do OpenClaw.** Os nomes de campo de `agent.yaml`/`agents.list`
 > (ex.: `promptFile`, `skills`, `workspace`) seguem a convenção documentada do

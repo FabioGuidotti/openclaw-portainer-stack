@@ -50,6 +50,11 @@ services:
       OP_SERVICE_ACCOUNT_TOKEN: ${OP_SERVICE_ACCOUNT_TOKEN}
       # Google Ads API Configuration
       MATON_API_KEY: ${MATON_API_KEY}
+      # GoogleAdsExpert skill auto-install (baixa a skill do repositorio no boot)
+      GAE_REPO: ${GAE_REPO:-FabioGuidotti/openclaw-portainer-stack}
+      GAE_REF: ${GAE_REF:-main}
+      # GITHUB_TOKEN so e necessario se o repo for PRIVADO (GitHub PAT com scope repo)
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     volumes:
       - /data/openclaw-1/.openclaw:/home/node/.openclaw
       - /data/openclaw-1/workspace:/home/node/.openclaw/workspace
@@ -126,6 +131,56 @@ services:
           }
         else
           echo "Google Ads API skill já existe em $$GADS_SKILL_DIR"
+        fi
+
+        # ========================================
+        # INSTALAR GOOGLE ADS EXPERT SKILL SE NÃO EXISTIR (auto-sync do repo)
+        # ========================================
+        GAE_DIR="/home/node/.openclaw/skills/google-ads-expert"
+        if [ ! -f "$$GAE_DIR/SKILL.md" ]; then
+          echo "Instalando google-ads-expert skill (auto-sync de $$GAE_REPO@$$GAE_REF)..."
+          rm -rf /tmp/gae-src; mkdir -p /tmp/gae-src
+          node -e '
+        const https = require("https"), fs = require("fs");
+        const repo = process.env.GAE_REPO || "FabioGuidotti/openclaw-portainer-stack";
+        const ref = process.env.GAE_REF || "main";
+        const tok = (process.env.GITHUB_TOKEN || "").trim();
+        const dest = "/tmp/gae-src/src.tgz";
+        const start = tok
+          ? "https://api.github.com/repos/" + repo + "/tarball/" + ref
+          : "https://codeload.github.com/" + repo + "/tar.gz/refs/heads/" + ref;
+        function get(u, useAuth) {
+          const o = { headers: { "User-Agent": "openclaw-gae" } };
+          if (useAuth && tok) o.headers["Authorization"] = "Bearer " + tok;
+          https.get(u, o, function (res) {
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+              res.resume(); return get(res.headers.location, false);
+            }
+            if (res.statusCode !== 200) { console.error("google-ads-expert: download HTTP " + res.statusCode); process.exit(1); }
+            const w = fs.createWriteStream(dest);
+            res.pipe(w);
+            w.on("finish", function () { w.close(); console.log("google-ads-expert: download ok"); });
+          }).on("error", function (e) { console.error("google-ads-expert: " + e.message); process.exit(1); });
+        }
+        get(start, true);
+          '
+          if [ -f /tmp/gae-src/src.tgz ]; then
+            tar -xzf /tmp/gae-src/src.tgz -C /tmp/gae-src 2>/dev/null || echo "google-ads-expert: falha ao extrair tarball"
+            GAE_SRC=$$(find /tmp/gae-src -type d -path "*agents/google-ads-expert" | head -1)
+            if [ -n "$$GAE_SRC" ]; then
+              mkdir -p "$$GAE_DIR"
+              cp -R "$$GAE_SRC/." "$$GAE_DIR/"
+              mkdir -p "/home/node/.openclaw/workspace/google-ads-expert/history" "/home/node/.openclaw/workspace/google-ads-expert/changes" "/home/node/.openclaw/workspace/google-ads-expert/baseline"
+              cp "$$GAE_DIR/system-prompt.md" "/home/node/.openclaw/workspace/google-ads-expert/agent.md" 2>/dev/null || true
+              echo "google-ads-expert: skill instalada em $$GAE_DIR"
+            else
+              echo "google-ads-expert: ERRO - pasta agents/google-ads-expert nao encontrada no tarball"
+            fi
+          else
+            echo "google-ads-expert: download falhou (repo privado? defina GITHUB_TOKEN no stack; ou ajuste GAE_REF)"
+          fi
+        else
+          echo "google-ads-expert: skill já existe em $$GAE_DIR"
         fi
 
         # ========================================

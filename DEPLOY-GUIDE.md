@@ -143,26 +143,38 @@ Agente OpenClaw que audita e gerencia contas de Google Ads continuamente,
 usando o **Maton** (skill `google-ads-api`) para dados ao vivo. Metodologia e
 documentacao completas em `agents/google-ads-expert/` e `docs/`.
 
-### Pre-requisitos
-- Variavel `MATON_API_KEY` ja definida no stack (ver topo do compose).
-- Repositorio clonado no host da VPS.
+### Metodo recomendado: auto-install pelo stack (sem SSH)
 
-### Instalar a skill + workspace do agente
+O `docker-compose.yml` **baixa a skill do repositorio no boot** do gateway (igual
+faz com `notion`/`google-ads-api`) e registra o agente + habilita a skill. Voce so
+precisa **atualizar e redeployar a stack no Portainer**:
+
+1. **Merge o PR na `main`** (a skill precisa estar na branch que o gateway vai baixar).
+2. Portainer > **Stacks** > `openclaw` > **Editor**: cole a versao atualizada do
+   `docker-compose.yml` (a que contem o bloco de auto-install).
+3. (Opcional) Em **Environment variables**, ajuste se necessario:
+   | Name | Quando usar | Default |
+   |---|---|---|
+   | `GAE_REF` | testar antes do merge → use o nome da branch | `main` |
+   | `GITHUB_TOKEN` | **so se o repo for privado** (GitHub PAT, scope `repo`) | vazio |
+4. **Update the stack** (o Portainer recria o `openclaw-gw-1`, que baixa a skill no boot).
+5. Nos **Logs** do container do gateway, procure: `google-ads-expert: skill instalada`.
+
+> **Nome do container.** O servico do gateway nao fixa `container_name`, entao o
+> nome real e prefixado pela stack (ex.: `openclaw-openclaw-gw-1-1`). Para achar:
+> `docker ps --format '{{.Names}}' | grep gw`. No Portainer, use o botao **Restart**
+> na tela do container (nao precisa do nome).
+
+### Alternativa: deploy manual via SSH (host)
+
+Se preferir instalar a partir de um clone no host (em vez do auto-install):
 ```bash
-# No host da VPS, a partir do repo clonado:
+# No HOST da VPS (via SSH), no repo clonado:
 sudo sh agents/google-ads-expert/deploy/deploy-google-ads-expert.sh \
-  --openclaw-dir /data/openclaw-1/.openclaw
+  --openclaw-dir /data/openclaw-1/.openclaw   # confirme o path real do volume
 ```
-Isso copia a skill para `/data/openclaw-1/.openclaw/skills/google-ads-expert`
-e prepara o workspace de memoria em `.../workspace/google-ads-expert`.
-
-### Registrar no OpenClaw
-O `docker-compose.yml` ja injeta a configuracao na inicializacao do gateway:
-registra o agente `google-ads-expert` em `agents.list` e habilita a skill
-`google-ads-expert` em `skills.entries`. Basta reiniciar o gateway:
-
-1. Portainer > Containers > `openclaw-gw-1` > **Restart**
-2. Logs esperados: config aplicada com sucesso; skill `google-ads-expert` carregada.
+Depois reinicie o gateway pelo Portainer. Confira no host:
+`ls /data/openclaw-1/.openclaw/skills/google-ads-expert/`.
 
 ### Usar
 Fale com o agente **GoogleAdsExpert** (Telegram/Discord/Control UI):
