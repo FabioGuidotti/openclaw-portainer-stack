@@ -183,6 +183,17 @@ services:
           echo "google-ads-expert: skill já existe em $$GAE_DIR"
         fi
 
+        # Identidade + workspace do agente (idempotente, roda em todo boot).
+        # A identidade (system prompt) do agente OpenClaw vem de agent.md/AGENTS.md
+        # no workspace do agente — nao de um campo na agents.list.
+        if [ -f "$$GAE_DIR/system-prompt.md" ]; then
+          GAE_WS="/home/node/.openclaw/workspace/google-ads-expert"
+          mkdir -p "$$GAE_WS/history" "$$GAE_WS/changes" "$$GAE_WS/baseline"
+          cp "$$GAE_DIR/system-prompt.md" "$$GAE_WS/agent.md" 2>/dev/null || true
+          cp "$$GAE_DIR/system-prompt.md" "$$GAE_WS/AGENTS.md" 2>/dev/null || true
+          echo "google-ads-expert: identidade sincronizada em $$GAE_WS"
+        fi
+
         # ========================================
         # CONFIGURAR openclaw.json
         # ========================================
@@ -226,11 +237,9 @@ services:
 
         // 2b. Agents - Registro
         // GoogleAdsExpert: consultor/gestor permanente de Google Ads.
-        // A skill google-ads-expert e o system-prompt.md sao instalados via
-        // agents/google-ads-expert/deploy/deploy-google-ads-expert.sh
-        const gaePromptPath = "/home/node/.openclaw/skills/google-ads-expert/system-prompt.md";
-        let gaePrompt = "";
-        try { gaePrompt = fs.readFileSync(gaePromptPath, "utf8"); } catch (e) { gaePrompt = ""; }
+        // A skill google-ads-expert e a identidade (agent.md no workspace) sao
+        // instaladas pelo bloco de auto-install acima. A identidade (system
+        // prompt) vem de <workspace>/agent.md, NAO de um campo na agents.list.
         c.agents.list = [
           {
             id: "main",
@@ -243,8 +252,7 @@ services:
             name: "GoogleAdsExpert",
             default: false,
             workspace: "/home/node/.openclaw/workspace/google-ads-expert",
-            skills: ["google-ads-expert", "google-ads-api", "notion"],
-            prompt: gaePrompt || undefined
+            skills: ["google-ads-expert", "google-ads-api", "notion"]
           }
         ];
 
